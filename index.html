@@ -2,8 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <!-- FIX 1: Bỏ user-scalable=no để tuân thủ WCAG 1.4.4 (accessibility) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Block Blast Pro Solver</title>
     <style>
         :root {
@@ -14,17 +13,15 @@
             --text-muted: #94a3b8;
             --cell-empty: #0f172a;
             --cell-hover: #334155;
-            --cell-filled: #3b82f6;
-            --brick-filled: #a855f7;
-            --cell-highlight: #10b981;
+            --cell-filled: #3b82f6; 
+            --brick-filled: #a855f7; 
+            --cell-highlight: #10b981; 
             --btn-primary: #2563eb;
             --btn-danger: #ef4444;
             --btn-secondary: #475569;
-            /* FIX 7: Đổi tên CSS variable từ h1/h2/h3 (dễ nhầm với heading HTML)
-               sang tên ngữ nghĩa rõ ràng theo chức năng của từng loại trợ giúp */
-            --helper-add-color:     #f59e0b; /* Thêm 1x1 */
-            --helper-bomb-color:    #ef4444; /* Bom Nổ   */
-            --helper-discard-color: #94a3b8; /* Phá Gạch */
+            --h1-color: #f59e0b; /* Màu Cam cho H1 (1x1) */
+            --h2-color: #ef4444; /* Màu Đỏ cho H2 (Bomb) */
+            --h3-color: #94a3b8; /* Màu xám sáng cho H3 (Xóa gạch) */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -57,24 +54,23 @@
         /* Helpers Inventory */
         .helper-inventory { display: flex; justify-content: space-around; background: rgba(15, 23, 42, 0.5); padding: 12px 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border-color); }
         .helper-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        /* FIX 5: Thêm cursor: pointer vì label giờ liên kết với input qua for= */
-        .helper-item label { font-size: 0.85rem; font-weight: bold; text-align: center; cursor: pointer; }
+        .helper-item label { font-size: 0.85rem; font-weight: bold; text-align: center;}
         .helper-input-container { display: flex; align-items: center; gap: 5px; }
         .helper-input { width: 45px; text-align: center; background: var(--bg-color); color: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; font-weight: bold; font-size: 1rem; }
         .helper-input:focus { outline: 1px solid var(--btn-primary); }
-        /* FIX 7: Đổi class name theo tên variable mới */
-        .helper-add-text     { color: var(--helper-add-color); }
-        .helper-bomb-text    { color: var(--helper-bomb-color); }
-        .helper-discard-text { color: var(--helper-discard-color); }
+        .h1-text { color: var(--h1-color); }
+        .h2-text { color: var(--h2-color); }
+        .h3-text { color: var(--h3-color); }
 
-        /* Bricks */
+        /* Bricks 5x5 */
         .bricks-container { display: flex; justify-content: space-around; margin-bottom: 20px; }
         .brick-wrapper { display: flex; flex-direction: column; align-items: center; }
         .brick-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; }
-        .brick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background-color: var(--border-color); padding: 4px; border-radius: 6px; touch-action: none; transition: background-color 0.3s; }
+        .brick-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background-color: var(--border-color); padding: 3px; border-radius: 6px; touch-action: none; transition: background-color 0.3s; }
         .brick-grid.erase-mode { background-color: rgba(239, 68, 68, 0.2); }
-        .brick-cell { width: 25px; height: 25px; background-color: var(--cell-empty); border-radius: 3px; cursor: pointer; }
-        @media (min-width: 600px) { .brick-cell { width: 32px; height: 32px; } }
+        .brick-cell { width: 16px; height: 16px; background-color: var(--cell-empty); border-radius: 2px; cursor: pointer; }
+        @media (min-width: 600px) { .brick-cell { width: 22px; height: 22px; } }
+        @media (max-width: 350px) { .brick-cell { width: 14px; height: 14px; } }
 
         /* Actions */
         .actions { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
@@ -89,14 +85,12 @@
         .steps-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 600px) { .steps-container { grid-template-columns: repeat(3, 1fr); } }
         .step-card { background-color: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; border: 1px solid transparent; }
+        
+        .step-card.is-helper { border-color: var(--h1-color); background-color: rgba(245, 158, 11, 0.05); }
+        .step-card.is-h2 { border-color: var(--h2-color); background-color: rgba(239, 68, 68, 0.05); }
+        .step-card.is-h3 { border-color: var(--h3-color); background-color: rgba(148, 163, 184, 0.05); }
 
-        /* FIX 7: Đổi tên class theo ngữ nghĩa */
-        .step-card.is-helper-add     { border-color: var(--helper-add-color);     background-color: rgba(245, 158,  11, 0.05); }
-        .step-card.is-helper-bomb    { border-color: var(--helper-bomb-color);    background-color: rgba(239,  68,  68, 0.05); }
-        .step-card.is-helper-discard { border-color: var(--helper-discard-color); background-color: rgba(148, 163, 184, 0.05); }
-
-        .step-num  { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #e2e8f0; }
-        .step-info { text-align: center; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-muted); height: 40px; display: flex; flex-direction: column; justify-content: center; }
+        .step-info { text-align: center; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-muted); height: 40px; display: flex; flex-direction: column; justify-content: center;}
         .combo-text { color: #34d399; font-weight: bold; animation: pulse 1s infinite; }
 
         .result-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1px; background-color: var(--border-color); padding: 2px; border-radius: 4px; z-index: 10; }
@@ -104,11 +98,10 @@
         @media (min-width: 600px) { .res-cell { width: 24px; height: 24px; } }
         .res-cell.old { background-color: #64748b; }
         .res-cell.new { background-color: var(--cell-highlight); box-shadow: 0 0 5px rgba(16, 185, 129, 0.8); }
-
-        /* FIX 7: Đổi tên class theo ngữ nghĩa */
-        .res-cell.helper-add-cell     { background-color: var(--helper-add-color);  box-shadow: 0 0 8px var(--helper-add-color); animation: pulse 1s infinite; }
-        .res-cell.helper-bomb-area    { background-color: var(--helper-bomb-color); box-shadow: 0 0 8px var(--helper-bomb-color); opacity: 0.8; }
-        .res-cell.helper-bomb-center  { background-color: #b91c1c; }
+        
+        .res-cell.h1-cell { background-color: var(--h1-color); box-shadow: 0 0 8px var(--h1-color); animation: pulse 1s infinite; }
+        .res-cell.h2-cell { background-color: var(--h2-color); box-shadow: 0 0 8px var(--h2-color); opacity: 0.8; }
+        .res-cell.h2-center { background-color: #b91c1c; }
 
         .continue-btn-container { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; flex-direction: column; align-items: center; gap: 10px; }
         .deduct-notice { font-size: 0.85rem; color: #fbbf24; text-align: center; }
@@ -116,11 +109,11 @@
         button.success:hover { background-color: #047857; transform: scale(1.05); }
         button.success:active { transform: scale(0.95); }
 
-        @keyframes pulse  { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
+        
         /* Loại bỏ nút cuộn của input type number */
-        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
@@ -129,7 +122,7 @@
 <div class="container">
     <div class="header">
         <h1>Block Blast Pro Solver</h1>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">Hệ thống Quản lý Tài nguyên & Tìm kiếm Sâu dần.</p>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Hệ thống Quản lý Tài nguyên & Khung vẽ gạch 5x5.</p>
     </div>
 
     <div class="layout">
@@ -141,32 +134,31 @@
             </div>
             <div class="tools">
                 <button id="toggleEraseBtn" class="tool-btn" onclick="toggleEraseMode()">
-                    <span id="eraseIcon"></span>
+                    <span id="eraseIcon">✏️ Bật Tẩy (Xóa)</span>
                 </button>
             </div>
         </div>
 
         <!-- GẠCH & ĐIỀU KHIỂN -->
         <div class="panel">
-            <h2 class="panel-title" style="color: #c084fc;">2. Thiết Lập & Các Viên Gạch</h2>
-
+            <h2 class="panel-title" style="color: #c084fc;">2. Thiết Lập & Các Viên Gạch (5x5)</h2>
+            
             <!-- QUẢN LÝ TRỢ GIÚP -->
             <div class="helper-inventory">
                 <div class="helper-item">
-                    <!-- FIX 5: Thêm for= để label liên kết đúng với input tương ứng -->
-                    <label class="helper-add-text" for="limitH1">Thêm 1x1 (+)</label>
+                    <label class="h1-text">Thêm 1x1 (+)</label>
                     <div class="helper-input-container">
                         <input type="number" id="limitH1" class="helper-input" value="1" min="0" max="99">
                     </div>
                 </div>
                 <div class="helper-item">
-                    <label class="helper-bomb-text" for="limitH2">Bom Nổ (X)</label>
+                    <label class="h2-text">Bom Nổ (X)</label>
                     <div class="helper-input-container">
                         <input type="number" id="limitH2" class="helper-input" value="1" min="0" max="99">
                     </div>
                 </div>
                 <div class="helper-item">
-                    <label class="helper-discard-text" for="limitH3">Phá Gạch</label>
+                    <label class="h3-text">Phá Gạch</label>
                     <div class="helper-input-container">
                         <input type="number" id="limitH3" class="helper-input" value="1" min="0" max="99">
                     </div>
@@ -186,12 +178,13 @@
     <!-- KẾT QUẢ -->
     <div id="solutionPanel">
         <h2 class="solution-title" id="solutionTitleText">Cách Đặt Tối Ưu</h2>
-        <div class="steps-container" id="stepsContainer" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"></div>
+        <div class="steps-container" id="stepsContainer" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        </div>
         <div class="continue-btn-container">
             <div class="deduct-notice" id="deductNotice"></div>
             <button class="success" onclick="applySolutionAndContinue()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
                 Áp Dụng Kết Quả & Chơi Lượt Tiếp Theo
             </button>
@@ -200,60 +193,36 @@
 </div>
 
 <script>
-    // ─── FIX 6: Tách hằng số ra khỏi logic, đặt tên rõ nghĩa ──────────────────
-    const BOARD_SIZE          = 8;
-    const BRICK_SIZE          = 3;
-    const BRICK_COUNT         = 3;
-    const MAX_ITERATIONS      = 200_000; // Bảo vệ chống treo trình duyệt
-    const SCORE_HELPER_WEIGHT = 1_000_000;
-    const SCORE_CLEAR_WEIGHT  = 1_000;
-    const BOMB_OFFSETS        = [[0,0], [-1,0], [1,0], [0,-1], [0,1]];
-
-    // ─── STATE ─────────────────────────────────────────────────────────────────
-    const makeBoard  = () => Array.from({ length: BOARD_SIZE  }, () => new Array(BOARD_SIZE).fill(0));
-    const makeBricks = () => Array.from({ length: BRICK_COUNT }, () =>
-                                Array.from({ length: BRICK_SIZE  }, () => new Array(BRICK_SIZE).fill(0)));
-
-    let board           = makeBoard();
-    let bricks          = makeBricks();
-    let isEraseMode     = false;
-    let isDragging      = false;
+    // --- STATE ---
+    let board = Array(8).fill().map(() => Array(8).fill(0));
+    // Đã chuyển lưới gạch lên thành 5x5
+    let bricks = [
+        Array(5).fill().map(() => Array(5).fill(0)),
+        Array(5).fill().map(() => Array(5).fill(0)),
+        Array(5).fill().map(() => Array(5).fill(0))
+    ];
+    let isEraseMode = false;
+    let isDragging = false;
     let currentSolution = null;
     let usedHelpersCount = { h1: 0, h2: 0, h3: 0 };
 
-    const mainBoardEl       = document.getElementById('mainBoard');
+    const mainBoardEl = document.getElementById('mainBoard');
     const bricksContainerEl = document.getElementById('bricksContainer');
-    const toggleEraseBtn    = document.getElementById('toggleEraseBtn');
-    const eraseIcon         = document.getElementById('eraseIcon');
-    const solveBtn          = document.getElementById('solveBtn');
-    const errorMsgEl        = document.getElementById('errorMsg');
-    const solutionPanel     = document.getElementById('solutionPanel');
-    const stepsContainer    = document.getElementById('stepsContainer');
+    const toggleEraseBtn = document.getElementById('toggleEraseBtn');
+    const eraseIcon = document.getElementById('eraseIcon');
+    const solveBtn = document.getElementById('solveBtn');
+    const errorMsgEl = document.getElementById('errorMsg');
+    const solutionPanel = document.getElementById('solutionPanel');
+    const stepsContainer = document.getElementById('stepsContainer');
 
-    const SVG_PENCIL = `<svg style="display:inline;width:18px;height:18px;vertical-align:middle;margin-right:4px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
-    const SVG_ERASER = `<svg style="display:inline;width:18px;height:18px;vertical-align:middle;margin-right:4px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>`;
-
-    // ─── FIX 4: Hàm khởi tạo trạng thái rõ ràng, thay cho hack gọi 2 lần ──────
-    function initState() {
-        isEraseMode = false;
-        toggleEraseBtn.classList.remove('active');
-        eraseIcon.innerHTML = SVG_PENCIL + 'Bật Tẩy (Xóa)';
-        mainBoardEl.classList.remove('erase-mode');
-        for (let i = 0; i < BRICK_COUNT; i++) {
-            const bg = document.getElementById(`brick-grid-${i}`);
-            if (bg) bg.classList.remove('erase-mode');
-        }
-    }
-
-    // ─── UI RENDER ─────────────────────────────────────────────────────────────
+    // --- UI SETUP ---
     function renderBoard() {
         mainBoardEl.innerHTML = '';
-        for (let r = 0; r < BOARD_SIZE; r++) {
-            for (let c = 0; c < BOARD_SIZE; c++) {
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell' + (board[r][c] ? ' filled' : '');
-                cell.dataset.r = r;
-                cell.dataset.c = c;
+                cell.dataset.r = r; cell.dataset.c = c;
                 cell.onmousedown = (e) => handleBoardInteract(e, r, c, true);
                 cell.onmouseenter = (e) => handleBoardInteract(e, r, c, false);
                 mainBoardEl.appendChild(cell);
@@ -263,21 +232,18 @@
 
     function renderBricks() {
         bricksContainerEl.innerHTML = '';
-        for (let i = 0; i < BRICK_COUNT; i++) {
+        for (let i = 0; i < 3; i++) {
             const wrapper = document.createElement('div');
             wrapper.className = 'brick-wrapper';
-
             const label = document.createElement('div');
-            label.className = 'brick-label';
-            label.textContent = `Viên ${i + 1}`;
+            label.className = 'brick-label'; label.textContent = `Viên ${i + 1}`;
             wrapper.appendChild(label);
 
             const grid = document.createElement('div');
             grid.className = 'brick-grid' + (isEraseMode ? ' erase-mode' : '');
             grid.id = `brick-grid-${i}`;
-
-            for (let r = 0; r < BRICK_SIZE; r++) {
-                for (let c = 0; c < BRICK_SIZE; c++) {
+            for (let r = 0; r < 5; r++) { // Đã chuyển thành 5
+                for (let c = 0; c < 5; c++) { // Đã chuyển thành 5
                     const cell = document.createElement('div');
                     cell.className = 'brick-cell cell' + (bricks[i][r][c] ? ' brick-filled' : '');
                     cell.dataset.i = i; cell.dataset.r = r; cell.dataset.c = c;
@@ -286,43 +252,38 @@
                     grid.appendChild(cell);
                 }
             }
-            wrapper.appendChild(grid);
-            bricksContainerEl.appendChild(wrapper);
+            wrapper.appendChild(grid); bricksContainerEl.appendChild(wrapper);
         }
     }
 
-    // ─── DRAG EVENTS ───────────────────────────────────────────────────────────
-    window.onmouseup    = () => { isDragging = false; };
-    window.onmouseleave = () => { isDragging = false; };
+    // --- DRAG EVENTS ---
+    window.onmouseup = () => isDragging = false;
+    window.onmouseleave = () => isDragging = false;
 
     function handleBoardInteract(e, r, c, isStart) {
         if (isStart) isDragging = true;
-        if (!isDragging) return;
-        const val = isEraseMode ? 0 : 1;
-        if (board[r][c] !== val) {
-            board[r][c] = val;
-            e.target.className = 'cell' + (val ? ' filled' : '');
-            hideSolution();
+        if (isDragging) {
+            const val = isEraseMode ? 0 : 1;
+            if (board[r][c] !== val) {
+                board[r][c] = val; e.target.className = 'cell' + (val ? ' filled' : ''); hideSolution();
+            }
         }
     }
 
     function handleBrickInteract(e, i, r, c, isStart) {
         if (isStart) isDragging = true;
-        if (!isDragging) return;
-        const val = isEraseMode ? 0 : 1;
-        if (bricks[i][r][c] !== val) {
-            bricks[i][r][c] = val;
-            e.target.className = 'brick-cell cell' + (val ? ' brick-filled' : '');
-            hideSolution();
+        if (isDragging) {
+            const val = isEraseMode ? 0 : 1;
+            if (bricks[i][r][c] !== val) {
+                bricks[i][r][c] = val; e.target.className = 'brick-cell cell' + (val ? ' brick-filled' : ''); hideSolution();
+            }
         }
     }
 
     function handleTouchMove(e, type) {
-        e.preventDefault();
-        if (!isDragging) return;
-        const touch = e.touches[0];
-        const el = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!el) return;
+        e.preventDefault(); if (!isDragging) return;
+        const touch = e.touches[0]; const el = document.elementFromPoint(touch.clientX, touch.clientY); if (!el) return;
+
         if (type === 'board' && el.classList.contains('cell') && !el.classList.contains('brick-cell')) {
             const r = parseInt(el.dataset.r), c = parseInt(el.dataset.c);
             if (!isNaN(r) && !isNaN(c)) {
@@ -338,43 +299,47 @@
         }
     }
 
-    mainBoardEl.addEventListener('touchstart',  (e) => { e.preventDefault(); isDragging = true; handleTouchMove(e, 'board'); }, { passive: false });
-    mainBoardEl.addEventListener('touchmove',   (e) => handleTouchMove(e, 'board'), { passive: false });
-    mainBoardEl.addEventListener('touchend',    ()  => { isDragging = false; });
-    bricksContainerEl.addEventListener('touchstart', (e) => { e.preventDefault(); isDragging = true; handleTouchMove(e, 'brick'); }, { passive: false });
-    bricksContainerEl.addEventListener('touchmove',  (e) => handleTouchMove(e, 'brick'), { passive: false });
-    bricksContainerEl.addEventListener('touchend',   ()  => { isDragging = false; });
+    mainBoardEl.addEventListener('touchstart', (e) => { e.preventDefault(); isDragging = true; handleTouchMove(e, 'board'); }, {passive: false});
+    mainBoardEl.addEventListener('touchmove', (e) => handleTouchMove(e, 'board'), {passive: false});
+    mainBoardEl.addEventListener('touchend', () => isDragging = false);
+
+    bricksContainerEl.addEventListener('touchstart', (e) => { e.preventDefault(); isDragging = true; handleTouchMove(e, 'brick'); }, {passive: false});
+    bricksContainerEl.addEventListener('touchmove', (e) => handleTouchMove(e, 'brick'), {passive: false});
+    bricksContainerEl.addEventListener('touchend', () => isDragging = false);
 
     function toggleEraseMode() {
         isEraseMode = !isEraseMode;
         if (isEraseMode) {
             toggleEraseBtn.classList.add('active');
-            eraseIcon.innerHTML = SVG_ERASER + 'Đang dùng Tẩy';
+            eraseIcon.innerHTML = `<svg style="display:inline; width:18px; height:18px; vertical-align:middle; margin-right:4px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>Đang dùng Tẩy`;
             mainBoardEl.classList.add('erase-mode');
-            for (let i = 0; i < BRICK_COUNT; i++) { const bg = document.getElementById(`brick-grid-${i}`); if (bg) bg.classList.add('erase-mode'); }
+            for(let i=0; i<3; i++) { const bg = document.getElementById(`brick-grid-${i}`); if(bg) bg.classList.add('erase-mode'); }
         } else {
             toggleEraseBtn.classList.remove('active');
-            eraseIcon.innerHTML = SVG_PENCIL + 'Bật Tẩy (Xóa)';
+            eraseIcon.innerHTML = `<svg style="display:inline; width:18px; height:18px; vertical-align:middle; margin-right:4px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>Bật Tẩy (Xóa)`;
             mainBoardEl.classList.remove('erase-mode');
-            for (let i = 0; i < BRICK_COUNT; i++) { const bg = document.getElementById(`brick-grid-${i}`); if (bg) bg.classList.remove('erase-mode'); }
+            for(let i=0; i<3; i++) { const bg = document.getElementById(`brick-grid-${i}`); if(bg) bg.classList.remove('erase-mode'); }
         }
     }
 
     function clearAll() {
-        board  = makeBoard();
-        bricks = makeBricks();
+        board = Array(8).fill().map(() => Array(8).fill(0));
+        bricks = [
+            Array(5).fill().map(() => Array(5).fill(0)), // Đã cập nhật lên 5x5
+            Array(5).fill().map(() => Array(5).fill(0)),
+            Array(5).fill().map(() => Array(5).fill(0))
+        ];
         renderBoard(); renderBricks(); hideSolution(); showError('');
     }
     function hideSolution() { solutionPanel.style.display = 'none'; currentSolution = null; }
     function showError(msg) { errorMsgEl.textContent = msg; errorMsgEl.style.display = msg ? 'block' : 'none'; }
 
-    // ─── CORE LOGIC ────────────────────────────────────────────────────────────
-    const extractShape = (grid3x3) => {
-        const coords = [];
-        let minR = BRICK_SIZE, minC = BRICK_SIZE;
-        for (let r = 0; r < BRICK_SIZE; r++) {
-            for (let c = 0; c < BRICK_SIZE; c++) {
-                if (grid3x3[r][c]) { coords.push([r, c]); minR = Math.min(minR, r); minC = Math.min(minC, c); }
+    // --- THUẬT TOÁN LOGIC CƠ BẢN ---
+    const extractShape = (grid5x5) => { // Tham số đổi thành 5x5
+        let coords = []; let minR = 5, minC = 5; // Khởi tạo min là 5
+        for (let r = 0; r < 5; r++) { // Đã chuyển thành 5
+            for (let c = 0; c < 5; c++) { // Đã chuyển thành 5
+                if (grid5x5[r][c]) { coords.push([r, c]); minR = Math.min(minR, r); minC = Math.min(minC, c); }
             }
         }
         if (coords.length === 0) return null;
@@ -382,271 +347,166 @@
     };
 
     const canPlace = (bd, shape, startR, startC) => {
-        for (const [dr, dc] of shape) {
-            const r = startR + dr, c = startC + dc;
-            if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE || bd[r][c] !== 0) return false;
+        for (let [dr, dc] of shape) {
+            let r = startR + dr, c = startC + dc;
+            if (r < 0 || r >= 8 || c < 0 || c >= 8 || bd[r][c] === 1) return false;
         }
         return true;
     };
 
-    // Phiên bản bất biến (immutable) — dùng để replay kết quả cho màn hình
     const placeAndClear = (bd, shape, startR, startC) => {
-        const newBoard = bd.map(row => [...row]);
-        for (const [dr, dc] of shape) newBoard[startR + dr][startC + dc] = 1;
-        const rowsToClear = [], colsToClear = [];
-        for (let r = 0; r < BOARD_SIZE; r++) if (newBoard[r].every(v => v === 1)) rowsToClear.push(r);
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            let full = true;
-            for (let r = 0; r < BOARD_SIZE; r++) if (!newBoard[r][c]) { full = false; break; }
-            if (full) colsToClear.push(c);
+        let newBoard = bd.map(row => [...row]);
+        for (let [dr, dc] of shape) newBoard[startR + dr][startC + dc] = 1;
+        
+        let rowsToClear = [], colsToClear = [];
+        for (let r = 0; r < 8; r++) if (newBoard[r].every(cell => cell === 1)) rowsToClear.push(r);
+        for (let c = 0; c < 8; c++) {
+            let isColFull = true;
+            for (let r = 0; r < 8; r++) if (newBoard[r][c] === 0) { isColFull = false; break; }
+            if (isColFull) colsToClear.push(c);
         }
-        rowsToClear.forEach(r => { for (let c = 0; c < BOARD_SIZE; c++) newBoard[r][c] = 0; });
-        colsToClear.forEach(c => { for (let r = 0; r < BOARD_SIZE; r++) newBoard[r][c] = 0; });
+        rowsToClear.forEach(r => { for (let c = 0; c < 8; c++) newBoard[r][c] = 0; });
+        colsToClear.forEach(c => { for (let r = 0; r < 8; r++) newBoard[r][c] = 0; });
         return { board: newBoard, cleared: rowsToClear.length + colsToClear.length };
     };
 
-    // ─── FIX 2: In-place board mutation cho DFS ────────────────────────────────
-    // Thay vì tạo bản sao 8x8 (64 phần tử) tại mỗi nút của cây DFS (lên tới 200k lần),
-    // giờ ta thay đổi board trực tiếp và lưu "undo record" để khôi phục sau khi đệ quy.
-    // => Giảm đáng kể áp lực GC, tránh hàng triệu array ngắn hạn bị tạo ra và huỷ.
+    const countBlocks = (bd) => { let count = 0; for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(bd[r][c]) count++; return count; };
 
-    function applyPlaceInPlace(bd, shape, startR, startC) {
-        for (const [dr, dc] of shape) bd[startR + dr][startC + dc] = 1;
+    const bombOffsets = [[0,0], [-1,0], [1,0], [0,-1], [0,1]];
 
-        const rowsToClear = [], colsToClear = [];
-        for (let r = 0; r < BOARD_SIZE; r++) if (bd[r].every(v => v === 1)) rowsToClear.push(r);
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            let full = true;
-            for (let r = 0; r < BOARD_SIZE; r++) if (!bd[r][c]) { full = false; break; }
-            if (full) colsToClear.push(c);
-        }
-
-        // Lưu snapshot dạng flat array [r0, c0, val0, r1, c1, val1, ...] để undo nhanh
-        const snapshot = [];
-        const seen = new Set();
-        rowsToClear.forEach(r => {
-            for (let c = 0; c < BOARD_SIZE; c++) {
-                const key = r * BOARD_SIZE + c;
-                if (!seen.has(key)) { seen.add(key); snapshot.push(r, c, bd[r][c]); bd[r][c] = 0; }
-            }
-        });
-        colsToClear.forEach(c => {
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                const key = r * BOARD_SIZE + c;
-                if (!seen.has(key)) { seen.add(key); snapshot.push(r, c, bd[r][c]); bd[r][c] = 0; }
-            }
-        });
-        return { shape, startR, startC, cleared: rowsToClear.length + colsToClear.length, snapshot };
-    }
-
-    function undoPlaceInPlace(bd, undo) {
-        // 1. Khôi phục các ô đã bị xoá
-        for (let i = 0; i < undo.snapshot.length; i += 3)
-            bd[undo.snapshot[i]][undo.snapshot[i + 1]] = undo.snapshot[i + 2];
-        // 2. Xoá các ô mà shape đã đặt
-        for (const [dr, dc] of undo.shape) bd[undo.startR + dr][undo.startC + dc] = 0;
-    }
-
-    function applyBombInPlace(bd, centerR, centerC) {
-        const hitCells = [], snapshot = [];
-        for (const [dr, dc] of BOMB_OFFSETS) {
-            const nr = centerR + dr, nc = centerC + dc;
-            if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                hitCells.push([nr, nc]);
-                if (bd[nr][nc] !== 0) { snapshot.push(nr, nc, bd[nr][nc]); bd[nr][nc] = 0; }
-            }
-        }
-        return { centerR, centerC, hitCells, snapshot };
-    }
-
-    function undoBombInPlace(bd, undo) {
-        for (let i = 0; i < undo.snapshot.length; i += 3)
-            bd[undo.snapshot[i]][undo.snapshot[i + 1]] = undo.snapshot[i + 2];
-    }
-
-    const countBlocks = (bd) => {
-        let n = 0;
-        for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) if (bd[r][c]) n++;
-        return n;
-    };
-
-    // Replay để tạo ảnh chụp boardAfter tại mỗi bước — chỉ chạy 1 lần sau khi tìm xong
-    function replayForDisplay(initialBoard, steps) {
-        const result = [];
-        const bd = initialBoard.map(r => [...r]);
-        for (const step of steps) {
-            if (step.type === 'PLACE') {
-                const res = placeAndClear(bd, step.shape, step.r, step.c);
-                result.push({ ...step, boardAfter: res.board, cleared: res.cleared });
-                for (let r = 0; r < BOARD_SIZE; r++) bd[r] = [...res.board[r]];
-            } else if (step.type === 'H1_ADD') {
-                const res = placeAndClear(bd, [[0, 0]], step.r, step.c);
-                result.push({ ...step, boardAfter: res.board, cleared: res.cleared });
-                for (let r = 0; r < BOARD_SIZE; r++) bd[r] = [...res.board[r]];
-            } else if (step.type === 'H2_BOMB') {
-                const newBoard = bd.map(row => [...row]);
-                for (const [nr, nc] of step.hitCells) newBoard[nr][nc] = 0;
-                result.push({ ...step, boardAfter: newBoard });
-                for (let r = 0; r < BOARD_SIZE; r++) bd[r] = [...newBoard[r]];
-            } else if (step.type === 'H3_DISCARD') {
-                result.push({ ...step, boardAfter: bd.map(row => [...row]) });
-            }
-        }
-        return result;
-    }
-
-    // ─── ALGORITHM ─────────────────────────────────────────────────────────────
+    // --- ALGORITHM ---
     function solve() {
         showError(''); hideSolution(); solveBtn.disabled = true; solveBtn.textContent = 'Đang Tính Toán...';
 
         setTimeout(() => {
-            const activeShapes = [];
-            for (let i = 0; i < BRICK_COUNT; i++) {
-                const shape = extractShape(bricks[i]);
-                if (shape) activeShapes.push({ id: i, shape });
+            let activeShapes = [];
+            for (let i = 0; i < 3; i++) {
+                let shape = extractShape(bricks[i]);
+                if (shape) activeShapes.push({ id: i, shape: shape });
             }
+
             if (activeShapes.length === 0) { showError('Vui lòng vẽ ít nhất 1 viên gạch!'); resetSolveBtn(); return; }
 
-            const limitH1    = parseInt(document.getElementById('limitH1').value) || 0;
-            const limitH2    = parseInt(document.getElementById('limitH2').value) || 0;
-            const limitH3    = parseInt(document.getElementById('limitH3').value) || 0;
-            const totalAllowed = limitH1 + limitH2 + limitH3;
-
-            // Map để tra cứu shape nhanh theo id
-            const shapeMap = new Map(activeShapes.map(s => [s.id, s.shape]));
+            // Lấy giới hạn từ UI
+            let limitH1 = parseInt(document.getElementById('limitH1').value) || 0;
+            let limitH2 = parseInt(document.getElementById('limitH2').value) || 0;
+            let limitH3 = parseInt(document.getElementById('limitH3').value) || 0;
+            let totalAllowed = limitH1 + limitH2 + limitH3;
 
             let globalBestScore = -Infinity;
-            let globalBestSteps = null;
-            let iterations      = 0;
+            let globalBestSeq = null;
+            let iterations = 0;
+            const MAX_ITERATIONS = 200000;
 
-            // FIX 2: Dùng 1 board làm việc duy nhất, thay đổi in-place
-            const workBoard = board.map(row => [...row]);
-            // FIX 3: Dùng push/pop thay vì spread [...steps, newStep] tại mỗi nút đệ quy
-            const currentSteps = [];
-            // Mảng gạch còn lại — dùng splice để backtrack, O(n) nhưng n ≤ BRICK_COUNT
-            const remaining = activeShapes.map(s => s.id);
-
-            // Iterative Deepening: thử 0 trợ giúp → 1 → ... → max
-            for (let maxHelpers = 0; maxHelpers <= totalAllowed; maxHelpers++) {
+            for (let maxHelpersAllowed = 0; maxHelpersAllowed <= totalAllowed; maxHelpersAllowed++) {
                 iterations = 0;
                 let bestScore = -Infinity;
-                let bestStepsCopy = null;
+                let bestSeq = null;
 
-                function dfs(usedH1, usedH2, usedH3, totalCleared) {
+                function dfs(currentBoard, remainingBrickIds, usedH1, usedH2, usedH3, currentSteps, totalCleared) {
                     if (iterations > MAX_ITERATIONS) return;
                     iterations++;
 
-                    const helpersUsed = usedH1 + usedH2 + usedH3;
-                    if (helpersUsed > maxHelpers) return;
+                    let helpersCount = usedH1 + usedH2 + usedH3;
+                    if (helpersCount > maxHelpersAllowed) return;
 
-                    // Tất cả gạch đã xử lý → đánh giá điểm
-                    if (remaining.length === 0) {
-                        const score = (100 - helpersUsed) * SCORE_HELPER_WEIGHT
-                                    + totalCleared          * SCORE_CLEAR_WEIGHT
-                                    - countBlocks(workBoard);
+                    if (remainingBrickIds.length === 0) {
+                        let score = (100 - helpersCount) * 1000000 + totalCleared * 1000 - countBlocks(currentBoard);
                         if (score > bestScore) {
-                            bestScore     = score;
-                            bestStepsCopy = currentSteps.map(s => ({ ...s })); // snapshot gọn (không có boardAfter)
+                            bestScore = score;
+                            bestSeq = [...currentSteps];
                         }
                         return;
                     }
 
-                    // Hành động 1: Đặt gạch bình thường
-                    for (let i = 0; i < remaining.length; i++) {
-                        const bId   = remaining[i];
-                        const shape = shapeMap.get(bId);
-                        remaining.splice(i, 1); // loại khỏi danh sách tạm thời
+                    for (let i = 0; i < remainingBrickIds.length; i++) {
+                        let bId = remainingBrickIds[i];
+                        let shape = activeShapes.find(s => s.id === bId).shape;
+                        let nextBricks = remainingBrickIds.filter((_, idx) => idx !== i);
 
-                        for (let r = 0; r < BOARD_SIZE; r++) {
-                            for (let c = 0; c < BOARD_SIZE; c++) {
-                                if (canPlace(workBoard, shape, r, c)) {
-                                    const undo = applyPlaceInPlace(workBoard, shape, r, c);
-                                    currentSteps.push({ type: 'PLACE', brickId: bId, r, c, shape });
-                                    dfs(usedH1, usedH2, usedH3, totalCleared + undo.cleared);
-                                    currentSteps.pop();
-                                    undoPlaceInPlace(workBoard, undo);
-                                }
-                            }
-                        }
-                        remaining.splice(i, 0, bId); // khôi phục
-                    }
-
-                    // Thử trợ giúp chỉ khi chưa đạt giới hạn vòng lặp hiện tại
-                    if (helpersUsed >= maxHelpers) return;
-
-                    // Trợ giúp 3: Phá bỏ 1 viên gạch
-                    if (usedH3 < limitH3) {
-                        for (let i = 0; i < remaining.length; i++) {
-                            const bId = remaining[i];
-                            remaining.splice(i, 1);
-                            currentSteps.push({ type: 'H3_DISCARD', brickId: bId });
-                            dfs(usedH1, usedH2, usedH3 + 1, totalCleared);
-                            currentSteps.pop();
-                            remaining.splice(i, 0, bId);
-                        }
-                    }
-
-                    // Trợ giúp 1: Đặt ô 1x1 (chỉ thử nếu có thể xoá hàng/cột)
-                    if (usedH1 < limitH1) {
-                        for (let r = 0; r < BOARD_SIZE; r++) {
-                            for (let c = 0; c < BOARD_SIZE; c++) {
-                                if (workBoard[r][c] === 0) {
-                                    let rCount = 0, cCount = 0;
-                                    for (let x = 0; x < BOARD_SIZE; x++) {
-                                        if (workBoard[r][x]) rCount++;
-                                        if (workBoard[x][c]) cCount++;
-                                    }
-                                    if (rCount === BOARD_SIZE - 1 || cCount === BOARD_SIZE - 1) {
-                                        const undo = applyPlaceInPlace(workBoard, [[0, 0]], r, c);
-                                        currentSteps.push({ type: 'H1_ADD', r, c });
-                                        dfs(usedH1 + 1, usedH2, usedH3, totalCleared + undo.cleared);
-                                        currentSteps.pop();
-                                        undoPlaceInPlace(workBoard, undo);
-                                    }
+                        for (let r = 0; r < 8; r++) {
+                            for (let c = 0; c < 8; c++) {
+                                if (canPlace(currentBoard, shape, r, c)) {
+                                    let res = placeAndClear(currentBoard, shape, r, c);
+                                    dfs(res.board, nextBricks, usedH1, usedH2, usedH3, 
+                                        [...currentSteps, {type: 'PLACE', brickId: bId, r: r, c: c, shape: shape, boardAfter: res.board, cleared: res.cleared}], 
+                                        totalCleared + res.cleared);
                                 }
                             }
                         }
                     }
 
-                    // Trợ giúp 2: Bom dấu Cộng (chỉ thử nếu trúng ít nhất 1 viên)
-                    if (usedH2 < limitH2) {
-                        for (let r = 0; r < BOARD_SIZE; r++) {
-                            for (let c = 0; c < BOARD_SIZE; c++) {
-                                let hits = 0;
-                                for (const [dr, dc] of BOMB_OFFSETS) {
-                                    const nr = r + dr, nc = c + dc;
-                                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && workBoard[nr][nc] === 1) hits++;
+                    if (helpersCount < maxHelpersAllowed) {
+                        if (usedH3 < limitH3) {
+                            for (let i = 0; i < remainingBrickIds.length; i++) {
+                                let bId = remainingBrickIds[i];
+                                let nextBricks = remainingBrickIds.filter((_, idx) => idx !== i);
+                                dfs(currentBoard, nextBricks, usedH1, usedH2, usedH3 + 1,
+                                    [...currentSteps, {type: 'H3_DISCARD', brickId: bId, boardAfter: currentBoard}],
+                                    totalCleared);
+                            }
+                        }
+
+                        if (usedH1 < limitH1) {
+                            for (let r = 0; r < 8; r++) {
+                                for (let c = 0; c < 8; c++) {
+                                    if (currentBoard[r][c] === 0) {
+                                        let rCount = 0, cCount = 0;
+                                        for(let x=0; x<8; x++) { if(currentBoard[r][x]) rCount++; if(currentBoard[x][c]) cCount++; }
+                                        
+                                        if (rCount === 7 || cCount === 7) {
+                                            let res = placeAndClear(currentBoard, [[0,0]], r, c);
+                                            dfs(res.board, remainingBrickIds, usedH1 + 1, usedH2, usedH3,
+                                                [...currentSteps, {type: 'H1_ADD', r: r, c: c, boardAfter: res.board, cleared: res.cleared}],
+                                                totalCleared + res.cleared);
+                                        }
+                                    }
                                 }
-                                if (hits > 0) {
-                                    const undo = applyBombInPlace(workBoard, r, c);
-                                    currentSteps.push({ type: 'H2_BOMB', centerR: r, centerC: c, hitCells: undo.hitCells });
-                                    dfs(usedH1, usedH2 + 1, usedH3, totalCleared);
-                                    currentSteps.pop();
-                                    undoBombInPlace(workBoard, undo);
+                            }
+                        }
+
+                        if (usedH2 < limitH2) {
+                            for (let r = 0; r < 8; r++) {
+                                for (let c = 0; c < 8; c++) {
+                                    let hits = 0;
+                                    for (let [dr, dc] of bombOffsets) {
+                                        let nr = r + dr, nc = c + dc;
+                                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && currentBoard[nr][nc] === 1) hits++;
+                                    }
+                                    
+                                    if (hits > 0) {
+                                        let newBoard = currentBoard.map(row => [...row]);
+                                        let hitCells = [];
+                                        for (let [dr, dc] of bombOffsets) {
+                                            let nr = r + dr, nc = c + dc;
+                                            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                                                newBoard[nr][nc] = 0;
+                                                hitCells.push([nr, nc]);
+                                            }
+                                        }
+                                        dfs(newBoard, remainingBrickIds, usedH1, usedH2 + 1, usedH3,
+                                            [...currentSteps, {type: 'H2_BOMB', centerR: r, centerC: c, hitCells: hitCells, boardAfter: newBoard}],
+                                            totalCleared);
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                // Khôi phục trạng thái trước mỗi lần thử độ sâu mới
-                for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) workBoard[r][c] = board[r][c];
-                remaining.length = 0;
-                activeShapes.forEach(s => remaining.push(s.id));
+                let bIds = activeShapes.map(s => s.id);
+                dfs(board, bIds, 0, 0, 0, [], 0);
 
-                dfs(0, 0, 0, 0);
-
-                if (bestStepsCopy) {
-                    globalBestSteps = bestStepsCopy;
+                if (bestSeq) {
+                    globalBestSeq = bestSeq;
                     globalBestScore = bestScore;
-                    break; // Tìm được với ít trợ giúp nhất → dừng
+                    break; 
                 }
             }
 
-            if (globalBestSteps) {
-                // Replay 1 lần để gắn boardAfter vào từng bước (phục vụ hiển thị)
-                currentSolution = replayForDisplay(board, globalBestSteps);
-                renderSolution(currentSolution);
+            if (globalBestSeq) {
+                currentSolution = globalBestSeq;
+                renderSolution(globalBestSeq);
             } else {
                 showError('Bó tay! Dùng hết kho trợ giúp vẫn không có chỗ để nhét gạch vào.');
             }
@@ -656,131 +516,97 @@
 
     function resetSolveBtn() { solveBtn.disabled = false; solveBtn.textContent = 'Tìm Nước Đi Tối Ưu'; }
 
-    // ─── RENDER KẾT QUẢ ────────────────────────────────────────────────────────
+    // --- RENDER KẾT QUẢ ---
     function renderSolution(solution) {
         stepsContainer.innerHTML = '';
-
+        
         usedHelpersCount = { h1: 0, h2: 0, h3: 0 };
-        for (const s of solution) {
-            if (s.type === 'H1_ADD')     usedHelpersCount.h1++;
-            if (s.type === 'H2_BOMB')    usedHelpersCount.h2++;
+        solution.forEach(s => {
+            if (s.type === 'H1_ADD') usedHelpersCount.h1++;
+            if (s.type === 'H2_BOMB') usedHelpersCount.h2++;
             if (s.type === 'H3_DISCARD') usedHelpersCount.h3++;
-        }
+        });
 
-        const totalUsed = usedHelpersCount.h1 + usedHelpersCount.h2 + usedHelpersCount.h3;
-        const titleEl   = document.getElementById('solutionTitleText');
-        titleEl.textContent = totalUsed === 0
-            ? 'Cách Đặt Tối Ưu (Không cần Trợ Giúp)'
+        let totalUsed = usedHelpersCount.h1 + usedHelpersCount.h2 + usedHelpersCount.h3;
+        
+        document.getElementById('solutionTitleText').innerHTML = totalUsed === 0 
+            ? 'Cách Đặt Tối Ưu (Không cần Trợ Giúp)' 
             : `Cách Đặt (Phải dùng ${totalUsed} Trợ Giúp để sinh tồn)`;
-        titleEl.style.color = totalUsed === 0 ? '#34d399' : '#f59e0b';
+        document.getElementById('solutionTitleText').style.color = totalUsed === 0 ? '#34d399' : '#f59e0b';
 
-        // FIX 8: Dùng DOM API thay vì inject HTML string cho nội dung động
-        const deductEl   = document.getElementById('deductNotice');
-        const deductParts = [];
-        if (usedHelpersCount.h1 > 0) deductParts.push(`-${usedHelpersCount.h1} Thêm 1x1`);
-        if (usedHelpersCount.h2 > 0) deductParts.push(`-${usedHelpersCount.h2} Bom Nổ`);
-        if (usedHelpersCount.h3 > 0) deductParts.push(`-${usedHelpersCount.h3} Phá Gạch`);
-
-        deductEl.textContent = '';
-        if (deductParts.length > 0) {
-            deductEl.appendChild(document.createTextNode('⚠️ Nhấn "Áp dụng" sẽ tự động trừ đi: '));
-            const b = document.createElement('b');
-            b.textContent = deductParts.join(' | ');
-            deductEl.appendChild(b);
-            deductEl.appendChild(document.createTextNode(' khỏi kho.'));
-        } else {
-            deductEl.textContent = 'Bạn không tốn trợ giúp nào ở lượt này!';
-        }
-        deductEl.style.color = deductParts.length > 0 ? '#fbbf24' : '#34d399';
+        let deductHtml = [];
+        if(usedHelpersCount.h1 > 0) deductHtml.push(`-${usedHelpersCount.h1} Thêm 1x1`);
+        if(usedHelpersCount.h2 > 0) deductHtml.push(`-${usedHelpersCount.h2} Bom Nổ`);
+        if(usedHelpersCount.h3 > 0) deductHtml.push(`-${usedHelpersCount.h3} Phá Gạch`);
+        
+        document.getElementById('deductNotice').innerHTML = deductHtml.length > 0 
+            ? `⚠️ Nhấn "Áp dụng" sẽ tự động trừ đi: <b>${deductHtml.join(' | ')}</b> khỏi kho.`
+            : `Bạn không tốn trợ giúp nào ở lượt này!`;
+        document.getElementById('deductNotice').style.color = deductHtml.length > 0 ? '#fbbf24' : '#34d399';
 
         let trueStepIndex = 1;
 
-        for (let index = 0; index < solution.length; index++) {
-            const step      = solution[index];
+        solution.forEach((step, index) => {
             const prevBoard = index === 0 ? board : solution[index - 1].boardAfter;
-            const highlight = prevBoard.map(row => [...row]);
-
+            const highlightBoard = prevBoard.map(row => [...row]);
+            
             const card = document.createElement('div');
             card.className = 'step-card';
-
-            // FIX 8: Tạo header bằng DOM, không dùng innerHTML với dữ liệu động
-            const stepNum  = document.createElement('div');
-            stepNum.className = 'step-num';
-            const stepInfo = document.createElement('div');
-            stepInfo.className = 'step-info';
-
+            
+            let headerHtml = '';
+            
             if (step.type === 'PLACE') {
-                for (const [dr, dc] of step.shape) highlight[step.r + dr][step.c + dc] = 2;
-                stepNum.textContent = `Bước ${trueStepIndex++}`;
-                const brickSpan = document.createElement('span');
-                brickSpan.style.cssText = 'color:#c084fc;font-weight:bold;';
-                brickSpan.textContent = `Viên ${step.brickId + 1}`;
-                stepInfo.appendChild(document.createTextNode('Đặt '));
-                stepInfo.appendChild(brickSpan);
-                if (step.cleared > 0) {
-                    stepInfo.appendChild(document.createElement('br'));
-                    const combo = document.createElement('span');
-                    combo.className = 'combo-text';
-                    combo.textContent = `(${step.cleared} COMBO!)`;
-                    stepInfo.appendChild(combo);
-                }
-
+                for (let [dr, dc] of step.shape) highlightBoard[step.r + dr][step.c + dc] = 2;
+                let comboHtml = step.cleared > 0 ? `<br><span class="combo-text">(${step.cleared} COMBO!)</span>` : '';
+                headerHtml = `
+                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #e2e8f0;">Bước ${trueStepIndex++}</div>
+                    <div class="step-info">Đặt <span style="color: #c084fc; font-weight: bold;">Viên ${step.brickId + 1}</span> ${comboHtml}</div>
+                `;
             } else if (step.type === 'H1_ADD') {
-                card.classList.add('is-helper-add');
-                highlight[step.r][step.c] = 3;
-                stepNum.textContent = '[Trợ Giúp]';
-                stepNum.style.color = 'var(--helper-add-color)';
-                stepInfo.textContent = 'Thêm khối 1x1';
-                if (step.cleared > 0) {
-                    stepInfo.appendChild(document.createElement('br'));
-                    const combo = document.createElement('span');
-                    combo.className = 'combo-text';
-                    combo.textContent = `(${step.cleared} COMBO!)`;
-                    stepInfo.appendChild(combo);
-                }
-
+                card.classList.add('is-helper');
+                highlightBoard[step.r][step.c] = 3;
+                let comboHtml = step.cleared > 0 ? `<br><span class="combo-text">(${step.cleared} COMBO!)</span>` : '';
+                headerHtml = `
+                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: var(--h1-color);">[Trợ Giúp]</div>
+                    <div class="step-info">Thêm khối 1x1 ${comboHtml}</div>
+                `;
             } else if (step.type === 'H2_BOMB') {
-                card.classList.add('is-helper-bomb');
-                for (const [r, c] of step.hitCells) highlight[r][c] = 4;
-                highlight[step.centerR][step.centerC] = 5;
-                stepNum.textContent = '[Trợ Giúp]';
-                stepNum.style.color = 'var(--helper-bomb-color)';
-                stepInfo.textContent = 'Bom nổ hình dấu Cộng (+)';
-
+                card.classList.add('is-h2');
+                for (let [r, c] of step.hitCells) highlightBoard[r][c] = 4;
+                highlightBoard[step.centerR][step.centerC] = 5;
+                headerHtml = `
+                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: var(--h2-color);">[Trợ Giúp]</div>
+                    <div class="step-info">Bom nổ hình dấu Cộng (+)</div>
+                `;
             } else if (step.type === 'H3_DISCARD') {
-                card.classList.add('is-helper-discard');
-                stepNum.textContent = '[Trợ Giúp]';
-                stepNum.style.color = 'var(--helper-discard-color)';
-                const brickSpan = document.createElement('span');
-                brickSpan.style.cssText = 'color:#c084fc;font-weight:bold;';
-                brickSpan.textContent = `Viên ${step.brickId + 1}`;
-                stepInfo.appendChild(document.createTextNode('Phá bỏ '));
-                stepInfo.appendChild(brickSpan);
+                card.classList.add('is-h3');
+                headerHtml = `
+                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: var(--h3-color);">[Trợ Giúp]</div>
+                    <div class="step-info">Phá bỏ <span style="color: #c084fc; font-weight: bold;">Viên ${step.brickId + 1}</span></div>
+                `;
             }
 
-            card.appendChild(stepNum);
-            card.appendChild(stepInfo);
+            card.innerHTML = headerHtml;
 
-            // Mini Result Grid
             const grid = document.createElement('div');
             grid.className = 'result-grid';
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    const cellEl = document.createElement('div');
-                    const v = highlight[r][c];
-                    let cls = 'res-cell';
-                    if      (v === 1) cls += ' old';
-                    else if (v === 2) cls += ' new';
-                    else if (v === 3) cls += ' helper-add-cell';
-                    else if (v === 4) cls += ' helper-bomb-area';
-                    else if (v === 5) cls += ' helper-bomb-center';
-                    cellEl.className = cls;
-                    grid.appendChild(cellEl);
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cellVal = highlightBoard[r][c];
+                    const cell = document.createElement('div');
+                    let cellClass = 'res-cell';
+                    if (cellVal === 1) cellClass += ' old';
+                    if (cellVal === 2) cellClass += ' new';
+                    if (cellVal === 3) cellClass += ' h1-cell'; 
+                    if (cellVal === 4) cellClass += ' h2-cell'; 
+                    if (cellVal === 5) cellClass += ' h2-center'; 
+                    cell.className = cellClass;
+                    grid.appendChild(cell);
                 }
             }
             card.appendChild(grid);
             stepsContainer.appendChild(card);
-        }
+        });
 
         solutionPanel.style.display = 'block';
         setTimeout(() => solutionPanel.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -788,26 +614,28 @@
 
     function applySolutionAndContinue() {
         if (!currentSolution || currentSolution.length === 0) return;
-
+        
         const elH1 = document.getElementById('limitH1');
         const elH2 = document.getElementById('limitH2');
         const elH3 = document.getElementById('limitH3');
+        
         elH1.value = Math.max(0, parseInt(elH1.value) - usedHelpersCount.h1);
         elH2.value = Math.max(0, parseInt(elH2.value) - usedHelpersCount.h2);
         elH3.value = Math.max(0, parseInt(elH3.value) - usedHelpersCount.h3);
 
         const finalBoard = currentSolution[currentSolution.length - 1].boardAfter;
-        board  = finalBoard.map(row => [...row]);
-        bricks = makeBricks();
-        renderBoard(); renderBricks(); hideSolution();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        board = finalBoard.map(row => [...row]);
+        bricks = [
+            Array(5).fill().map(() => Array(5).fill(0)), // Đã cập nhật lên 5x5
+            Array(5).fill().map(() => Array(5).fill(0)),
+            Array(5).fill().map(() => Array(5).fill(0))
+        ];
+        renderBoard(); renderBricks(); hideSolution(); window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ─── KHỞI TẠO ──────────────────────────────────────────────────────────────
-    // FIX 4: Thay thế hack `toggleEraseMode(); toggleEraseMode();` bằng hàm init rõ ràng
-    initState();
-    renderBoard();
-    renderBricks();
+    // Init
+    toggleEraseMode(); toggleEraseMode(); 
+    renderBoard(); renderBricks();
 </script>
 </body>
 </html>
